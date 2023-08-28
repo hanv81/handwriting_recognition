@@ -46,7 +46,7 @@ def train(X, y, epochs):
     model.save('model.h5')
     return model, history
 
-def main():
+def train():
     col1, col2 = st.columns(2)
     with col1:
         epochs = st.number_input('Epochs', 10)
@@ -68,5 +68,15 @@ def main():
             plt.plot(history.history['accuracy'])
             st.pyplot(fig)
             st.success(f'Done. Accuracy on test set: {round(accuracy,2)}')
+
+def inference():
+    pass
+
+def main():
+    tab1, tab2 = st.tabs(('Train', 'Inference'))
+    with tab1:
+        train()
+    with tab2:
+        inference()
 
 main()
