@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Activation, Flatten, Input
 
 @st.cache_data
@@ -46,13 +46,13 @@ def train(X, y, epochs):
     model.save('model.h5')
     return model, history
 
-def train():
+def training(X, y):
     col1, col2 = st.columns(2)
     with col1:
         epochs = st.number_input('Epochs', 10)
     with col2:
         test_size = st.number_input('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
-    X,y,labels = read_data()
+
     if st.button('Train'):
         with st.spinner('Training...'):
             X_train, X_test, y_train_ohe, y_test_ohe = preprocess(X, y, test_size)
@@ -69,14 +69,24 @@ def train():
             st.pyplot(fig)
             st.success(f'Done. Accuracy on test set: {round(accuracy,2)}')
 
-def inference():
-    pass
+def inference(labels):
+    uploaded_file = st.file_uploader('Upload Image File', type=['png','jpg','bmp'])
+    if uploaded_file is not None:
+        img = Image.open(uploaded_file)
+        st.image(img)
+        img = np.array(img, dtype=float)
+        img /= 255
+        model = load_model('model.h5')
+        label = model.predict(img.reshape(-1,32,32))
+        st.write(labels[label.argmax()], label.max())
 
 def main():
+    st.title('HANDWRITING RECOGNITION')
+    X,y,labels = read_data()
     tab1, tab2 = st.tabs(('Train', 'Inference'))
     with tab1:
-        train()
+        training(X,y)
     with tab2:
-        inference()
+        inference(labels)
 
 main()
