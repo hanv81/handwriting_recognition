@@ -49,9 +49,9 @@ def train(X, y, epochs):
 def training(X, y):
     col1, col2 = st.columns(2)
     with col1:
-        epochs = st.number_input('Epochs', 10)
+        epochs = st.slider('Epochs', min_value=5, max_value=100, step=5)
     with col2:
-        test_size = st.number_input('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
+        test_size = st.slider('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
 
     if st.button('Train'):
         with st.spinner('Training...'):
