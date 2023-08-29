@@ -31,16 +31,17 @@ def read_data(n = 1000):
 
 def preprocess(X, y, test_size):
     X /= 255
+    num_classes = max(y) + 1
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, stratify=y)
-    y_train_ohe = to_categorical(y_train, num_classes=26)
-    y_test_ohe = to_categorical(y_test, num_classes=26)
+    y_train_ohe = to_categorical(y_train, num_classes=num_classes)
+    y_test_ohe = to_categorical(y_test, num_classes=num_classes)
     return X_train, X_test, y_train_ohe, y_test_ohe
 
-def train(X, y, epochs):
+def train(X, y, epochs, num_classes):
     model = Sequential()
     model.add(Input(shape=X.shape[1:]))
     model.add(Flatten())
-    model.add(Dense(26, activation='softmax'))
+    model.add(Dense(num_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics='accuracy')
     history = model.fit(X, y, epochs = epochs, verbose=1)
     model.save('model.h5')
@@ -56,7 +57,7 @@ def training(X, y):
     if st.button('Train'):
         with st.spinner('Training...'):
             X_train, X_test, y_train_ohe, y_test_ohe = preprocess(X, y, test_size)
-            model,history = train(X_train, y_train_ohe, epochs)
+            model,history = train(X_train, y_train_ohe, epochs, y.max()+1)
             _, accuracy = model.evaluate(X_test, y_test_ohe)
             fig, _ = plt.subplots(1,2)
             fig.set_figheight(2)
@@ -69,25 +70,25 @@ def training(X, y):
             st.pyplot(fig)
             st.success(f'Done. Accuracy on test set: {round(accuracy,2)}')
 
-def inference(labels):
+def inference(labels, input_shape):
     uploaded_file = st.file_uploader('Upload Image File', type=['png','jpg','bmp'])
     if uploaded_file is not None:
         model = load_model('model.h5')
         img = Image.open(uploaded_file)
         st.text('Original Image')
         st.image(img)
-        img = img.resize((32,32))
+        img = img.resize(input_shape)
         img = img.convert('L')
         img = np.array(img, dtype=float)/255
         col1, col2 = st.columns(2)
         with col1:
             st.text('Grayscale Image')
-            inference_image(model, labels, img)
+            inference_image(model, labels, img, input_shape)
         with col2:
             st.text('Invert Grayscale Image')
-            inference_image(model, labels, 1-img)
+            inference_image(model, labels, 1-img, input_shape)
             
-def inference_image(model, labels, img):
+def inference_image(model, labels, img, input_shape):
     label = model.predict(img.reshape(-1,32,32)).squeeze()
     ids = np.argsort(label)[::-1]
     st.image(img)
@@ -102,6 +103,6 @@ def main():
         X,y,labels = read_data(n)
         training(X,y)
     with tab2:
-        inference(labels)
+        inference(labels, X[0].shape)
 
 main()
