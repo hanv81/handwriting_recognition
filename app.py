@@ -89,7 +89,7 @@ def inference(labels, input_shape):
             inference_image(model, labels, 1-img, input_shape)
             
 def inference_image(model, labels, img, input_shape):
-    label = model.predict(img.reshape(-1,32,32)).squeeze()
+    label = model.predict(img.reshape(-1,*input_shape)).squeeze()
     ids = np.argsort(label)[::-1]
     st.image(img)
     for i in ids[:5]:
