@@ -113,11 +113,11 @@ def inference(labels, input_shape):
             inference_image(model, labels, img, input_shape, False)
 
 def inference_image(model, labels, img, input_shape, draw_img=True):
-    y_pred = model.predict(img.reshape(-1,*input_shape)).squeeze()*100
-    ids = np.argsort(y_pred)[::-1]
+    probs = model.predict(img.reshape(-1,*input_shape)).squeeze()*100
+    ids = np.argsort(probs)[::-1]
     if draw_img:st.image(img)
     for i in ids[:5]:
-        st.write(labels[i], y_pred[i].round(decimals=2))
+        st.write(labels[i], ':', probs[i].round(decimals=2), '%')
 
 def main():
     st.title('HANDWRITING RECOGNITION')
