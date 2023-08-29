@@ -72,13 +72,27 @@ def training(X, y):
 def inference(labels):
     uploaded_file = st.file_uploader('Upload Image File', type=['png','jpg','bmp'])
     if uploaded_file is not None:
-        img = Image.open(uploaded_file)
-        st.image(img)
-        img = np.array(img, dtype=float)
-        img /= 255
         model = load_model('model.h5')
-        label = model.predict(img.reshape(-1,32,32))
-        st.write(labels[label.argmax()], label.max())
+        img = Image.open(uploaded_file)
+        st.text('Original Image')
+        st.image(img)
+        img = img.resize((32,32))
+        img = img.convert('L')
+        img = np.array(img, dtype=float)/255
+        col1, col2 = st.columns(2)
+        with col1:
+            st.text('Grayscale Image')
+            inference_image(model, labels, img)
+        with col2:
+            st.text('Invert Grayscale Image')
+            inference_image(model, labels, 1-img)
+            
+def inference_image(model, labels, img):
+    label = model.predict(img.reshape(-1,32,32)).squeeze()
+    ids = np.argsort(label)[::-1]
+    st.image(img)
+    for i in ids[:5]:
+        st.write(labels[i], label[i])
 
 def main():
     st.title('HANDWRITING RECOGNITION')
