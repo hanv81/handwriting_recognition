@@ -48,11 +48,14 @@ def train(X, y, epochs, num_classes):
     model.save('model.h5')
     return model, history
 
-def training(X, y):
-    col1, col2 = st.columns(2)
+def training():
+    col1, col2, col3 = st.columns(3)
     with col1:
-        epochs = st.slider('Epochs', min_value=5, max_value=50, value=10, step=5)
+        n = st.slider('Number of samples per class', min_value=1000, max_value=20000, step=200)
+        X, y, labels = read_data(n)
     with col2:
+        epochs = st.slider('Epochs', min_value=5, max_value=50, value=10, step=5)
+    with col3:
         test_size = st.slider('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
 
     if st.button('Train'):
@@ -70,6 +73,8 @@ def training(X, y):
             plt.plot(history.history['accuracy'])
             st.pyplot(fig)
             st.success(f'Done. Accuracy on test set: {round(accuracy,2)}')
+
+    return labels, X[0].shape
 
 def inference(labels, input_shape):
     col1, col2 = st.columns(2)
@@ -118,10 +123,8 @@ def main():
     st.title('HANDWRITING RECOGNITION')
     tab1, tab2 = st.tabs(('Train', 'Inference'))
     with tab1:
-        n = st.slider('Number of samples per class', min_value=1000, max_value=20000, step=200)
-        X,y,labels = read_data(n)
-        training(X,y)
+        labels, input_shape = training()
     with tab2:
-        inference(labels, X[0].shape)
+        inference(labels, input_shape)
 
 main()
