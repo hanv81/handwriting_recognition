@@ -3,19 +3,19 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Activation, Flatten, Input
 
 @st.cache_data
-def read_data():
+def read_data(n = 1000):
     folder_path = 'images'
     labels = os.listdir(folder_path)
-    n = 1000
     X = None
     y = None
-    for i in range(len(labels)):
+    for i in tqdm(range(len(labels))):
         subfolder = os.listdir(os.path.join(folder_path, labels[i]))
         imgs = [Image.open(os.path.join(folder_path, labels[i], img)) for img in subfolder[:n]]
         imgs = [np.array(img, dtype=float) for img in imgs]
@@ -26,7 +26,7 @@ def read_data():
         else:y.extend([i] * n)
     
     y = np.array(y)
-    print(X.shape, y.shape)
+    # print(X.shape, y.shape)
     return X,y,np.array(labels)
 
 def preprocess(X, y, test_size):
@@ -49,7 +49,7 @@ def train(X, y, epochs):
 def training(X, y):
     col1, col2 = st.columns(2)
     with col1:
-        epochs = st.slider('Epochs', min_value=5, max_value=100, step=5)
+        epochs = st.slider('Epochs', min_value=5, max_value=50, value=10, step=5)
     with col2:
         test_size = st.slider('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
 
@@ -96,9 +96,10 @@ def inference_image(model, labels, img):
 
 def main():
     st.title('HANDWRITING RECOGNITION')
-    X,y,labels = read_data()
     tab1, tab2 = st.tabs(('Train', 'Inference'))
     with tab1:
+        n = st.slider('Number of samples per class', min_value=1000, max_value=20000, step=200)
+        X,y,labels = read_data(n)
         training(X,y)
     with tab2:
         inference(labels)
