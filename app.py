@@ -19,9 +19,8 @@ def read_data(n = 1000):
     y = None
     for i in tqdm(range(len(labels))):
         subfolder = os.listdir(os.path.join(DS_PATH, labels[i]))
-        imgs = [Image.open(os.path.join(DS_PATH, labels[i], img)) for img in subfolder[:n]]
-        imgs = [np.array(img, dtype=float) for img in imgs]
-        imgs = np.stack(imgs)
+        imgs = [Image.open(os.path.join(DS_PATH, labels[i], file)) for file in subfolder[:n]]
+        imgs = np.stack([np.array(img, dtype=float) for img in imgs])
         # print(labels[i], imgs.shape)
         X = imgs if X is None else np.concatenate((X, imgs))
         if y is None:y = [i] * n
