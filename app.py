@@ -10,15 +10,16 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Activation, Flatten, Input
 
+DS_PATH = 'dataset'
+
 @st.cache_data
 def read_data(n = 1000):
-    folder_path = 'images'
-    labels = os.listdir(folder_path)
+    labels = os.listdir(DS_PATH)
     X = None
     y = None
     for i in tqdm(range(len(labels))):
-        subfolder = os.listdir(os.path.join(folder_path, labels[i]))
-        imgs = [Image.open(os.path.join(folder_path, labels[i], img)) for img in subfolder[:n]]
+        subfolder = os.listdir(os.path.join(DS_PATH, labels[i]))
+        imgs = [Image.open(os.path.join(DS_PATH, labels[i], img)) for img in subfolder[:n]]
         imgs = [np.array(img, dtype=float) for img in imgs]
         imgs = np.stack(imgs)
         # print(labels[i], imgs.shape)
