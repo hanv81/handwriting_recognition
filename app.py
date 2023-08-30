@@ -50,20 +50,17 @@ def train(X, y, epochs, num_classes):
     return model, history
 
 def training():
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        n = st.slider('Number of samples per class', min_value=1000, max_value=20000, step=200)
-        X, y, labels = read_data(n)
-    with col2:
-        epochs = st.slider('Epochs', min_value=5, max_value=50, value=10, step=5)
-    with col3:
-        test_size = st.slider('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
+    n = st.slider('Number of samples per class', min_value=1000, max_value=20000, step=200)
+    X, y, labels = read_data(n)
+    epochs = st.slider('Epochs', min_value=5, max_value=50, value=10, step=5)
+    test_size = st.slider('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
 
     if st.button('Train'):
         with st.spinner('Training...'):
             X_train, X_test, y_train_ohe, y_test_ohe = preprocess(X, y, test_size)
             model,history = train(X_train, y_train_ohe, epochs, y.max()+1)
             _, accuracy = model.evaluate(X_test, y_test_ohe)
+            st.success(f'Done. Accuracy on test set: {round(accuracy,2)}')
             fig, _ = plt.subplots(1,2)
             fig.set_figheight(2)
             plt.subplot(1,2,1)
@@ -73,11 +70,11 @@ def training():
             plt.title('Accuracy')
             plt.plot(history.history['accuracy'])
             st.pyplot(fig)
-            st.success(f'Done. Accuracy on test set: {round(accuracy,2)}')
 
     return labels, X[0].shape
 
 def inference(labels, input_shape):
+    st.subheader('Draw a letter (A-Z) or upload an image')
     col1, col2 = st.columns(2)
     with col1:
         canvas_result = st_canvas(
@@ -91,7 +88,7 @@ def inference(labels, input_shape):
     if canvas_result.image_data is not None:img = Image.fromarray(canvas_result.image_data)
 
     with col2:
-        uploaded_file = st.file_uploader('Upload Image File', type=['png','jpg','bmp'])
+        uploaded_file = st.file_uploader('', type=['png','jpg','bmp'])
         if uploaded_file is not None:img = Image.open(uploaded_file)
 
     if st.button('Predict'):
@@ -122,10 +119,8 @@ def inference_image(model, labels, img, input_shape, draw_img=True):
 
 def main():
     st.title('HANDWRITING RECOGNITION')
-    tab1, tab2 = st.tabs(('Train', 'Inference'))
-    with tab1:
+    with st.sidebar:
         labels, input_shape = training()
-    with tab2:
-        inference(labels, input_shape)
+    inference(labels, input_shape)
 
 main()
