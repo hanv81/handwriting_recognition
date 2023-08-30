@@ -1,2 +1,3 @@
+streamlit_drawable_canvas
 matplotlib
 tqdm
