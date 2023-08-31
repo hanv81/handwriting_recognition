@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
+from zipfile import ZipFile
+from concurrent.futures import ThreadPoolExecutor
 from streamlit_drawable_canvas import st_canvas
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -49,13 +51,40 @@ def train(X, y, epochs, num_classes):
     model.save('model.h5')
     return model, history
 
+def read_batch_data(zip, files, i, batch_size, data):
+    for j in range(i, min(i+batch_size,len(files))):
+        if files[j].endswith('png'):
+            with zip.open(files[j]) as f:
+                data[files[j]] = np.array(Image.open(f), dtype=float)
+
+def read_zip_file(uploaded_file, labels):
+    data = {}
+    batch_size = 32
+    with ZipFile(uploaded_file, 'r') as zip:
+        with ThreadPoolExecutor() as executor:
+            files = zip.namelist()
+            for i in range(0, len(files), batch_size):
+                executor.submit(read_batch_data, zip, files, i, batch_size, data)
+    
+    X = np.array(list(data.values()))
+    y = [k.split('/')[1] for k in data.keys()]
+    lb_list = labels.tolist()
+    y = np.array([lb_list.index(i) for i in y])
+    # print(X.shape, y.shape)
+    return X, y
+
 def training():
     n = st.slider('Number of samples per class', min_value=1000, max_value=20000, step=200)
     X, y, labels = read_data(n)
     epochs = st.slider('Epochs', min_value=5, max_value=50, value=10, step=5)
     test_size = st.slider('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
-
+    uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
+    
     if st.button('Train'):
+        if uploaded_file is not None:
+            with st.spinner('Reading zip file...'):
+                X, y = read_zip_file(uploaded_file, labels)
+
         with st.spinner('Training...'):
             X_train, X_test, y_train_ohe, y_test_ohe = preprocess(X, y, test_size)
             model,history = train(X_train, y_train_ohe, epochs, y.max()+1)
