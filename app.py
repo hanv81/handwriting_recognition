@@ -6,9 +6,10 @@ from PIL import Image
 from tqdm import tqdm
 from streamlit_drawable_canvas import st_canvas
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Dense, Activation, Flatten, Input
+from tensorflow.keras.layers import Dense, Flatten, Input
 
 DS_PATH = 'dataset'
 
@@ -31,9 +32,9 @@ def read_data(n = 1000):
     return X,y,np.array(labels)
 
 def preprocess(X, y, test_size):
-    X /= 255
+    X_train = X / 255
     num_classes = max(y) + 1
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X_train, y, test_size=test_size, stratify=y)
     y_train_ohe = to_categorical(y_train, num_classes=num_classes)
     y_test_ohe = to_categorical(y_test, num_classes=num_classes)
     return X_train, X_test, y_train_ohe, y_test_ohe
@@ -70,14 +71,14 @@ def training():
             plt.plot(history.history['accuracy'])
             st.pyplot(fig)
 
-    return labels, X[0].shape
+    return X, y, labels
 
-def inference(labels, input_shape):
+def inference(X, y, labels):
     st.subheader('Draw a letter (A-Z) or upload an image')
     col1, col2 = st.columns(2)
     with col1:
         canvas_result = st_canvas(
-            stroke_width=8,
+            stroke_width=15,
             stroke_color='rgb(255, 255, 255)',
             background_color='rgb(0, 0, 0)',
             height=150,
@@ -92,8 +93,8 @@ def inference(labels, input_shape):
 
     if st.button('Predict'):
         model = load_model('model.h5')
-        img = img.resize(input_shape)
-        img = img.convert('L')
+        input_shape = X[0].shape
+        img = img.resize(input_shape).convert('L')
         img = np.array(img, dtype=float)/255
         if uploaded_file is not None: 
             col3, col4, col5 = st.columns(3)
@@ -107,7 +108,13 @@ def inference(labels, input_shape):
                 st.text('Invert Grayscale Image')
                 inference_image(model, labels, 1-img, input_shape)
         else:
-            inference_image(model, labels, img, input_shape, False)
+            col6, col7 = st.columns(2)
+            with col6:
+                st.caption('Softmax')
+                inference_image(model, labels, img, input_shape, False)
+            with col7:
+                st.caption('KNN')
+                inference_knn(X, y, labels, img, input_shape)
 
 def inference_image(model, labels, img, input_shape, draw_img=True):
     probs = model.predict(img.reshape(-1,*input_shape)).squeeze()*100
@@ -116,10 +123,19 @@ def inference_image(model, labels, img, input_shape, draw_img=True):
     for i in ids[:5]:
         st.write(labels[i], ':', probs[i].round(decimals=2), '%')
 
+@st.cache_data
+def create_knn_model(X, y, input_shape):
+    return KNeighborsClassifier().fit(X.reshape(-1, input_shape[0]*input_shape[1]), y)
+
+def inference_knn(X, y, labels, img, input_shape):
+    knn = create_knn_model(X, y, input_shape)
+    id = knn.predict([img.flatten()]).squeeze()
+    st.write(labels[id])
+
 def main():
     st.title('HANDWRITING RECOGNITION')
     with st.sidebar:
-        labels, input_shape = training()
-    inference(labels, input_shape)
+        X, y, labels = training()
+    inference(X, y, labels)
 
 main()
