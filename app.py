@@ -26,8 +26,8 @@ def read_data(n = 1000):
         imgs = np.stack([np.array(img, dtype=float) for img in imgs])
         # print(labels[i], imgs.shape)
         X = imgs if X is None else np.concatenate((X, imgs))
-        if y is None:y = [i] * n
-        else:y.extend([i] * n)
+        if y is None:y = [i] * len(imgs)
+        else:y.extend([i] * len(imgs))
     
     y = np.array(y)
     # print(X.shape, y.shape)
