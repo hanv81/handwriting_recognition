@@ -55,6 +55,19 @@ def train(X, y, nodes, epochs, num_classes):
     model.save('model.h5')
     return model, history, t
 
+def visualize_history(history):
+    fig, _ = plt.subplots(1,2)
+    fig.set_figheight(2)
+    plt.subplot(1,2,1)
+    plt.title('Loss')
+    plt.xlabel('Epochs')
+    plt.plot(history.history['loss'])
+    plt.subplot(1,2,2)
+    plt.title('Accuracy')
+    plt.xlabel('Epochs')
+    plt.plot(history.history['accuracy'])
+    st.pyplot(fig)
+
 def main():
     st.set_page_config(
         page_title="Training",
@@ -90,15 +103,5 @@ def main():
                 model,history,t = train(X_train, y_train_ohe, nodes, epochs, y.max()+1)
                 _, accuracy = model.evaluate(X_test, y_test_ohe)
             st.success(f'Done. Training time: {t}s. Accuracy on test set: {round(accuracy*100,2)}%')
-            fig, _ = plt.subplots(1,2)
-            fig.set_figheight(2)
-            plt.subplot(1,2,1)
-            plt.title('Loss')
-            plt.xlabel('Epochs')
-            plt.plot(history.history['loss'])
-            plt.subplot(1,2,2)
-            plt.title('Accuracy')
-            plt.xlabel('Epochs')
-            plt.plot(history.history['accuracy'])
-            st.pyplot(fig)
+            visualize_history(history)
 main()
