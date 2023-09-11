@@ -66,13 +66,16 @@ def main():
         uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
         X, y, labels = read_data(n)
     with tabs[1]:
-        cols = st.columns(2)
+        cols = st.columns(4)
         with cols[0]:
             epochs = st.slider('Epochs', min_value=5, max_value=100, value=10, step=5)
         with cols[1]:
             test_size = st.slider('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
-        
-        num_of_mlp = st.number_input('Number of hidden layers', min_value=0)
+        with cols[2]:
+            num_of_mlp = st.number_input('Number of hidden layers', min_value=0)
+        with cols[3]:
+            num_of_cnn_block = st.number_input('Number of CNN blocks', min_value=0)
+
         nodes = []
         if num_of_mlp > 0:
             cols = st.columns(num_of_mlp)
@@ -80,7 +83,7 @@ def main():
                 with cols[i]:
                     node = st.selectbox(f'Layer {i+1} nodes', options=[2,4,8,16,32,64,128,256,512,1024], index=2)
                     nodes.append(node)
-        cnn = st.checkbox('CNN')
+
         if st.button('Train'):
             X_train, X_test, y_train_ohe, y_test_ohe = preprocess(X, y, test_size)
             with st.spinner('Training...'):
