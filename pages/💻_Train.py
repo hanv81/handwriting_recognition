@@ -79,15 +79,18 @@ def main():
     )
     tabs = st.tabs(('Dataset', 'Train'))
     with tabs[0]:
-        n = st.slider('Number of samples per class', min_value=100, max_value=20000, step=200)
-        uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
+        cols = st.columns(2)
+        with cols[0]:
+            n = st.number_input('Number of samples per class', value=500, min_value=100, max_value=20000, step=500)
+        with cols[1]:
+            uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
         X, y, labels = read_data(n)
     with tabs[1]:
         cols = st.columns(4)
         with cols[0]:
-            epochs = st.slider('Epochs', min_value=5, max_value=100, value=10, step=5)
+            epochs = st.number_input('Epochs', min_value=5, max_value=100, value=10, step=5)
         with cols[1]:
-            test_size = st.slider('Test size', min_value=.05, max_value=.5, value=0.1, step=.05)
+            test_size = st.number_input('Test size', min_value=.1, max_value=.5, value=0.2, step=.05)
         with cols[2]:
             num_of_mlp = st.number_input('Number of hidden layers', min_value=0)
         with cols[3]:
