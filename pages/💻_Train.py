@@ -39,11 +39,11 @@ def preprocess(X, y, test_size):
     y_test_ohe = to_categorical(y_test, num_classes=num_classes)
     return X_train, X_test, y_train_ohe, y_test_ohe
 
-def train(X, y, nodes, epochs, num_classes):
+def train(X, y, cnn_blocks, mlps, epochs, num_classes):
     model = Sequential()
     model.add(Input(shape=X.shape[1:]))
     model.add(Flatten())
-    for node in nodes:
+    for node in mlps:
         model.add(Dense(node, activation='relu'))
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics='accuracy')
@@ -95,11 +95,20 @@ def main():
                 with cols[i]:
                     node = st.selectbox(f'Layer {i+1} nodes', options=[2,4,8,16,32,64,128,256,512,1024], index=2)
                     nodes.append(node)
+        cnn_blocks = []
+        if num_of_cnn_block > 0:
+            cols = st.columns(num_of_cnn_block)
+            for i in range(num_of_cnn_block):
+                with cols[i]:
+                    st.text(f'Block {i+1}')
+                    n_filters = st.selectbox('Number of filters', options=[4,8,32,64,128,512], key=f'filters{i}')
+                    kernel_size = st.selectbox('Kernel size', options=[3,5,7,9,11], key=f'size{i}')
+                    cnn_blocks.append((n_filters, kernel_size))
 
         if st.button('Train'):
             X_train, X_test, y_train_ohe, y_test_ohe = preprocess(X, y, test_size)
             with st.spinner('Training...'):
-                model,history,t = train(X_train, y_train_ohe, nodes, epochs, y.max()+1)
+                model, history, t = train(X_train, y_train_ohe, cnn_blocks, nodes, epochs, y.max()+1)
                 _, accuracy = model.evaluate(X_test, y_test_ohe)
             st.success(f'Done. Training time: {t}s. Accuracy on test set: {round(accuracy*100,2)}%')
             visualize_history(history)
