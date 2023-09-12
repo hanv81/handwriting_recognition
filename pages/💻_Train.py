@@ -8,7 +8,7 @@ from PIL import Image
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Dense, Flatten, Input
+from tensorflow.keras.layers import Dense, Flatten, Input, Conv2D, MaxPool2D
 
 DS_PATH = 'dataset'
 
@@ -17,7 +17,8 @@ def read_data(n = 1000):
     labels = os.listdir(DS_PATH)
     X = None
     y = None
-    for i in stqdm(range(len(labels))):
+    # for i in stqdm(range(len(labels))):
+    for i in range(len(labels)):
         subfolder = os.listdir(os.path.join(DS_PATH, labels[i]))
         imgs = [Image.open(os.path.join(DS_PATH, labels[i], file)) for file in subfolder[:n]]
         imgs = np.stack([np.array(img, dtype=float) for img in imgs])
@@ -33,6 +34,7 @@ def read_data(n = 1000):
 def preprocess(X, y, test_size):
     print(X.shape, y.shape, test_size)
     X_train = X / 255
+    X_train = X_train[..., None]
     num_classes = max(y) + 1
     X_train, X_test, y_train, y_test = train_test_split(X_train, y, test_size=test_size, stratify=y)
     y_train_ohe = to_categorical(y_train, num_classes=num_classes)
@@ -42,6 +44,9 @@ def preprocess(X, y, test_size):
 def train(X, y, cnn_blocks, mlps, epochs, num_classes):
     model = Sequential()
     model.add(Input(shape=X.shape[1:]))
+    for n_filters, kernel_size in cnn_blocks:
+        model.add(Conv2D(n_filters, kernel_size, padding='same', activation='relu'))
+        model.add(MaxPool2D())
     model.add(Flatten())
     for node in mlps:
         model.add(Dense(node, activation='relu'))
