@@ -37,13 +37,15 @@ def preprocess(X, y, test_size):
     X_train = X_train[..., None]
     num_classes = max(y) + 1
     X_train, X_test, y_train, y_test = train_test_split(X_train, y, test_size=test_size, stratify=y)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_size, stratify=y_train)
     y_train_ohe = to_categorical(y_train, num_classes=num_classes)
     y_test_ohe = to_categorical(y_test, num_classes=num_classes)
-    return X_train, X_test, y_train_ohe, y_test_ohe
+    y_val_ohe = to_categorical(y_val, num_classes=num_classes)
+    return X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe
 
-def train(X, y, cnn_blocks, mlps, epochs, num_classes):
+def train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, mlps, epochs, num_classes):
     model = Sequential()
-    model.add(Input(shape=X.shape[1:]))
+    model.add(Input(shape=X_train.shape[1:]))
     for n_filters, kernel_size in cnn_blocks:
         model.add(Conv2D(n_filters, kernel_size, padding='same', activation='relu'))
         model.add(MaxPool2D())
@@ -54,7 +56,7 @@ def train(X, y, cnn_blocks, mlps, epochs, num_classes):
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics='accuracy')
     model.summary()
     t = time.time()
-    history = model.fit(X, y, epochs = epochs, verbose=1)
+    history = model.fit(X_train, y_train_ohe, epochs = epochs, validation_data=(X_val, y_val_ohe), verbose=1)
     t = int(time.time()-t)
     model.save('model.h5')
     return model, history, t
@@ -66,10 +68,14 @@ def visualize_history(history):
     plt.title('Loss')
     plt.xlabel('Epochs')
     plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.legend(['Train', 'Validation'])
     plt.subplot(1,2,2)
     plt.title('Accuracy')
     plt.xlabel('Epochs')
     plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.legend(['Train', 'Validation'])
     st.pyplot(fig)
 
 def main():
@@ -114,9 +120,9 @@ def main():
                     cnn_blocks.append((n_filters, kernel_size))
 
         if st.button('Train'):
-            X_train, X_test, y_train_ohe, y_test_ohe = preprocess(X, y, test_size)
+            X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe = preprocess(X, y, test_size)
             with st.spinner('Training...'):
-                model, history, t = train(X_train, y_train_ohe, cnn_blocks, nodes, epochs, y.max()+1)
+                model, history, t = train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, nodes, epochs, y.max()+1)
                 _, accuracy = model.evaluate(X_test, y_test_ohe)
             st.success(f'Done. Training time: {t}s. Accuracy on test set: {round(accuracy*100,2)}%')
             visualize_history(history)
