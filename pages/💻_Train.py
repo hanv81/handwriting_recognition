@@ -17,8 +17,7 @@ def read_data(n = 1000):
     labels = os.listdir(DS_PATH)
     X = None
     y = None
-    # for i in stqdm(range(len(labels))):
-    for i in range(len(labels)):
+    for i in stqdm(range(len(labels))):
         subfolder = os.listdir(os.path.join(DS_PATH, labels[i]))
         imgs = [Image.open(os.path.join(DS_PATH, labels[i], file)) for file in subfolder[:n]]
         imgs = np.stack([np.array(img, dtype=float) for img in imgs])
