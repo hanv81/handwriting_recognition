@@ -43,9 +43,9 @@ def preprocess(X, y, test_size):
     y_val_ohe = to_categorical(y_val, num_classes=num_classes)
     return X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe
 
-def train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, mlp_layers, use_batchnorm, epochs, num_classes):
+def create_model(input_shape, cnn_blocks, mlp_layers, use_batchnorm, num_classes):
     model = Sequential()
-    model.add(Input(shape=X_train.shape[1:]))
+    model.add(Input(shape=input_shape))
     for n_filters, kernel_size in cnn_blocks:
         model.add(Conv2D(n_filters, kernel_size, padding='same', activation='relu'))
         model.add(MaxPool2D())
@@ -55,6 +55,9 @@ def train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, mlp_layers, use_ba
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics='accuracy')
     model.summary()
+    return model
+
+def train(model, X_train, X_val, y_train_ohe, y_val_ohe, epochs):
     t = time.time()
     history = model.fit(X_train, y_train_ohe, epochs = epochs, validation_data=(X_val, y_val_ohe), verbose=1)
     t = int(time.time()-t)
@@ -120,13 +123,14 @@ def main():
                     kernel_size = st.selectbox('Kernel size', options=[3,5,7,9,11], key=f'size{i}')
                     cnn_blocks.append((n_filters, kernel_size))
 
+        model = create_model(X[..., None].shape[1:], cnn_blocks, mlp_layers, use_batchnorm, y.max()+1)
+        st.write('Total params:', model.count_params())
         if st.button('Train'):
             X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe = preprocess(X, y, test_size)
             with st.spinner('Training...'):
-                model, history, t = train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, mlp_layers, use_batchnorm, epochs, y.max()+1)
+                model, history, t = train(model, X_train, X_val, y_train_ohe, y_val_ohe, epochs)
                 _, test_acc = model.evaluate(X_test, y_test_ohe)
                 _, train_acc = model.evaluate(X_train, y_train_ohe)
             st.success(f'Training time: {t}s. Train accuracy: {round(train_acc*100,2)}%. Test accuracy: {round(test_acc*100,2)}%')
-            st.info(model.get_weights())
             visualize_history(history)
 main()
