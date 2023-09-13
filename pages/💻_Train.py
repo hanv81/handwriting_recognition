@@ -8,10 +8,12 @@ from stqdm import stqdm
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Dense, Flatten, Input, Conv2D, MaxPool2D, Activation, BatchNormalization
+from tensorflow.keras.layers import Dense, Flatten, Input, Conv2D, MaxPool2D, Activation, BatchNormalization, Dropout
 
 DS_PATH = 'dataset'
+l2_reg = l2(0.0001)
 
 @st.cache_data
 def read_data(n = 1000):
@@ -44,20 +46,25 @@ def preprocess(X, y, test_size):
     y_val_ohe = to_categorical(y_val, num_classes=num_classes)
     return X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe
 
-def create_model(input_shape, cnn_blocks, mlp_layers, use_batchnorm, use_bias, num_classes):
+def create_model(input_shape, cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout, num_classes):
     model = Sequential()
     model.add(Input(shape=input_shape))
+    kernel_regularizer = l2_reg if use_l2 else None
     for n_filters, kernel_size in cnn_blocks:
-        model.add(Conv2D(n_filters, kernel_size, padding='same', kernel_initializer='he_normal', use_bias=use_bias))
+        model.add(Conv2D(n_filters, kernel_size, padding='same', kernel_initializer='he_normal', kernel_regularizer=kernel_regularizer))
         if use_batchnorm:
             model.add(BatchNormalization())
+        if dropout != 0:
+            model.add(Dropout(dropout))
         model.add(Activation('relu'))
         model.add(MaxPool2D())
     model.add(Flatten())
     for node in mlp_layers:
-        model.add(Dense(node, kernel_initializer='he_normal', use_bias=use_bias))
+        model.add(Dense(node, kernel_initializer='he_normal', kernel_regularizer=kernel_regularizer))
         if use_batchnorm:
             model.add(BatchNormalization())
+        if dropout != 0:
+            model.add(Dropout(dropout))
         model.add(Activation('relu'))
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics='accuracy')
@@ -106,9 +113,7 @@ def main():
             num_of_mlp = st.number_input('Number of hidden layers', min_value=0)
         with cols[3]:
             num_of_cnn_block = st.number_input('Number of CNN blocks', min_value=0)
-        use_batchnorm = st.checkbox('Batch-Normalization')
-        use_bias = st.checkbox('Use bias')
-
+        
         mlp_layers = []
         if num_of_mlp > 0:
             cols = st.columns(num_of_mlp)
@@ -126,7 +131,15 @@ def main():
                     kernel_size = st.selectbox('Kernel size', options=[3,5,7,9,11], key=f'size{i}')
                     cnn_blocks.append((n_filters, kernel_size))
 
-        model = create_model(X[..., None].shape[1:], cnn_blocks, mlp_layers, use_batchnorm, use_bias, y.max()+1)
+        with st.expander('Overfit'):
+            cols = st.columns(2)
+            with cols[0]:
+                use_batchnorm = st.checkbox('Batch-Normalization')
+                use_l2 = st.checkbox('L2 Regularization')
+            with cols[1]:
+                dropout = st.slider('Dropout', min_value=.0, max_value=.9, value=.4, step=.1)
+
+        model = create_model(X[..., None].shape[1:], cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout, y.max()+1)
         st.write('Total params:', model.count_params())
         if st.button('Train'):
             X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe = preprocess(X, y, test_size)
