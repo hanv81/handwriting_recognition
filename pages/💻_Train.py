@@ -90,64 +90,68 @@ def visualize_history(history):
     fig.update_xaxes(title_text="Epochs", row=1, col=2)
     st.plotly_chart(fig)
 
-def main():
-    st.set_page_config(
-        page_title="Training",
-        page_icon="💻",
-    )
-    tabs = st.tabs(('Dataset', 'Train'))
-    with tabs[0]:
+def create_dataset():
+    with st.expander('Dataset'):
         cols = st.columns(2)
         with cols[0]:
             n = st.number_input('Number of samples per class', value=500, min_value=100, max_value=20000, step=500)
         with cols[1]:
             uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
         X, y, labels = read_data(n)
-    with tabs[1]:
-        cols = st.columns(4)
+    return X, y, labels
+
+def main():
+    st.set_page_config(
+        page_title="Training",
+        page_icon="💻",
+    )
+
+    X, y, labels = create_dataset()
+
+    cols = st.columns(4)
+    with cols[0]:
+        epochs = st.number_input('Epochs', min_value=5, max_value=100, value=10, step=5)
+    with cols[1]:
+        test_size = st.number_input('Test size', min_value=.1, max_value=.5, value=0.2, step=.05)
+    with cols[2]:
+        num_of_mlp = st.number_input('Number of hidden layers', min_value=0)
+    with cols[3]:
+        num_of_cnn_block = st.number_input('Number of CNN blocks', min_value=0)
+    
+    mlp_layers = []
+    if num_of_mlp > 0:
+        cols = st.columns(num_of_mlp)
+        for i in range(num_of_mlp):
+            with cols[i]:
+                mlp_layers.append(st.selectbox(f'Layer {i+1} nodes', options=[2,4,8,16,32,64,128,256,512,1024], index=2))
+
+    cnn_blocks = []
+    if num_of_cnn_block > 0:
+        cols = st.columns(num_of_cnn_block)
+        for i in range(num_of_cnn_block):
+            with cols[i]:
+                st.text(f'Block {i+1}')
+                n_filters = st.selectbox('Number of filters', options=[4,8,32,64,128,512], key=f'filters{i}')
+                kernel_size = st.selectbox('Kernel size', options=[3,5,7,9,11], key=f'size{i}')
+                cnn_blocks.append((n_filters, kernel_size))
+
+    with st.expander('Overfit'):
+        cols = st.columns(2)
         with cols[0]:
-            epochs = st.number_input('Epochs', min_value=5, max_value=100, value=10, step=5)
+            use_batchnorm = st.checkbox('Batch-Normalization')
+            use_l2 = st.checkbox('L2 Regularization')
         with cols[1]:
-            test_size = st.number_input('Test size', min_value=.1, max_value=.5, value=0.2, step=.05)
-        with cols[2]:
-            num_of_mlp = st.number_input('Number of hidden layers', min_value=0)
-        with cols[3]:
-            num_of_cnn_block = st.number_input('Number of CNN blocks', min_value=0)
-        
-        mlp_layers = []
-        if num_of_mlp > 0:
-            cols = st.columns(num_of_mlp)
-            for i in range(num_of_mlp):
-                with cols[i]:
-                    mlp_layers.append(st.selectbox(f'Layer {i+1} nodes', options=[2,4,8,16,32,64,128,256,512,1024], index=2))
+            dropout = st.slider('Dropout', min_value=.0, max_value=.9, value=.4, step=.1)
 
-        cnn_blocks = []
-        if num_of_cnn_block > 0:
-            cols = st.columns(num_of_cnn_block)
-            for i in range(num_of_cnn_block):
-                with cols[i]:
-                    st.text(f'Block {i+1}')
-                    n_filters = st.selectbox('Number of filters', options=[4,8,32,64,128,512], key=f'filters{i}')
-                    kernel_size = st.selectbox('Kernel size', options=[3,5,7,9,11], key=f'size{i}')
-                    cnn_blocks.append((n_filters, kernel_size))
-
-        with st.expander('Overfit'):
-            cols = st.columns(2)
-            with cols[0]:
-                use_batchnorm = st.checkbox('Batch-Normalization')
-                use_l2 = st.checkbox('L2 Regularization')
-            with cols[1]:
-                dropout = st.slider('Dropout', min_value=.0, max_value=.9, value=.4, step=.1)
-
-        model = create_model(X[..., None].shape[1:], cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout, y.max()+1)
-        st.write('Total params:', model.count_params())
-        if st.button('Train'):
-            X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe = preprocess(X, y, test_size)
-            with st.spinner('Training...'):
-                model, history, t = train(model, X_train, X_val, y_train_ohe, y_val_ohe, epochs)
-                _, test_acc = model.evaluate(X_test, y_test_ohe)
-                _, train_acc = model.evaluate(X_train, y_train_ohe)
-            st.success(f'Training time: {t}s. Train accuracy: {round(train_acc*100,2)}%. Test accuracy: {round(test_acc*100,2)}%')
-            visualize_history(history)
+    model = create_model(X[..., None].shape[1:], cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout, y.max()+1)
+    st.write('Total params:', model.count_params())
+    if st.button('Train'):
+        X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe = preprocess(X, y, test_size)
+        with st.spinner('Training...'):
+            model, history, t = train(model, X_train, X_val, y_train_ohe, y_val_ohe, epochs)
+            _, test_acc = model.evaluate(X_test, y_test_ohe)
+            _, train_acc = model.evaluate(X_train, y_train_ohe)
+        st.success(f'Training time: {t}s. Train accuracy: {round(train_acc*100,2)}%. Test accuracy: {round(test_acc*100,2)}%')
+        visualize_history(history)
 
 main()
