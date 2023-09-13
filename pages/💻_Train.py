@@ -8,7 +8,7 @@ from PIL import Image
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Dense, Flatten, Input, Conv2D, MaxPool2D
+from tensorflow.keras.layers import Dense, Flatten, Input, Conv2D, MaxPool2D, Activation, BatchNormalization
 
 DS_PATH = 'dataset'
 
@@ -47,11 +47,17 @@ def create_model(input_shape, cnn_blocks, mlp_layers, use_batchnorm, num_classes
     model = Sequential()
     model.add(Input(shape=input_shape))
     for n_filters, kernel_size in cnn_blocks:
-        model.add(Conv2D(n_filters, kernel_size, padding='same', activation='relu'))
+        model.add(Conv2D(n_filters, kernel_size, padding='same', kernel_initializer='he_normal'))
+        if use_batchnorm:
+            model.add(BatchNormalization())
+        model.add(Activation('relu'))
         model.add(MaxPool2D())
     model.add(Flatten())
     for node in mlp_layers:
-        model.add(Dense(node, activation='relu'))
+        model.add(Dense(node, kernel_initializer='he_normal'))
+        if use_batchnorm:
+            model.add(BatchNormalization())
+        model.add(Activation('relu'))
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics='accuracy')
     model.summary()
@@ -104,7 +110,7 @@ def main():
             num_of_mlp = st.number_input('Number of hidden layers', min_value=0)
         with cols[3]:
             num_of_cnn_block = st.number_input('Number of CNN blocks', min_value=0)
-        use_batchnorm = st.toggle('Use Batch-Normalization')
+        use_batchnorm = st.checkbox('Batch-Normalization')
 
         mlp_layers = []
         if num_of_mlp > 0:
