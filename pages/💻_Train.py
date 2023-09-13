@@ -43,14 +43,14 @@ def preprocess(X, y, test_size):
     y_val_ohe = to_categorical(y_val, num_classes=num_classes)
     return X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe
 
-def train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, mlps, epochs, num_classes):
+def train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, mlp_layers, use_batchnorm, epochs, num_classes):
     model = Sequential()
     model.add(Input(shape=X_train.shape[1:]))
     for n_filters, kernel_size in cnn_blocks:
         model.add(Conv2D(n_filters, kernel_size, padding='same', activation='relu'))
         model.add(MaxPool2D())
     model.add(Flatten())
-    for node in mlps:
+    for node in mlp_layers:
         model.add(Dense(node, activation='relu'))
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics='accuracy')
@@ -101,14 +101,15 @@ def main():
             num_of_mlp = st.number_input('Number of hidden layers', min_value=0)
         with cols[3]:
             num_of_cnn_block = st.number_input('Number of CNN blocks', min_value=0)
+        use_batchnorm = st.toggle('Use Batch-Normalization')
 
-        nodes = []
+        mlp_layers = []
         if num_of_mlp > 0:
             cols = st.columns(num_of_mlp)
             for i in range(num_of_mlp):
                 with cols[i]:
-                    node = st.selectbox(f'Layer {i+1} nodes', options=[2,4,8,16,32,64,128,256,512,1024], index=2)
-                    nodes.append(node)
+                    mlp_layers.append(st.selectbox(f'Layer {i+1} nodes', options=[2,4,8,16,32,64,128,256,512,1024], index=2))
+
         cnn_blocks = []
         if num_of_cnn_block > 0:
             cols = st.columns(num_of_cnn_block)
@@ -122,8 +123,10 @@ def main():
         if st.button('Train'):
             X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe = preprocess(X, y, test_size)
             with st.spinner('Training...'):
-                model, history, t = train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, nodes, epochs, y.max()+1)
-                _, accuracy = model.evaluate(X_test, y_test_ohe)
-            st.success(f'Done. Training time: {t}s. Accuracy on test set: {round(accuracy*100,2)}%')
+                model, history, t = train(X_train, X_val, y_train_ohe, y_val_ohe, cnn_blocks, mlp_layers, use_batchnorm, epochs, y.max()+1)
+                _, test_acc = model.evaluate(X_test, y_test_ohe)
+                _, train_acc = model.evaluate(X_train, y_train_ohe)
+            st.success(f'Training time: {t}s. Train accuracy: {round(train_acc*100,2)}%. Test accuracy: {round(test_acc*100,2)}%')
+            st.info(model.get_weights())
             visualize_history(history)
 main()
