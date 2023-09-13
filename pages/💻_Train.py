@@ -2,7 +2,8 @@ import os
 import time
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from stqdm import stqdm
 from PIL import Image
 from sklearn.model_selection import train_test_split
@@ -71,21 +72,16 @@ def train(model, X_train, X_val, y_train_ohe, y_val_ohe, epochs):
     return model, history, t
 
 def visualize_history(history):
-    fig, _ = plt.subplots(1,2)
-    fig.set_figheight(2)
-    plt.subplot(1,2,1)
-    plt.title('Loss')
-    plt.xlabel('Epochs')
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.legend(['Train', 'Validation'])
-    plt.subplot(1,2,2)
-    plt.title('Accuracy')
-    plt.xlabel('Epochs')
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.legend(['Train', 'Validation'])
-    st.pyplot(fig)
+    fig = make_subplots(rows=1, cols=2, subplot_titles=('Loss', 'Accuracy'))
+    fig.add_trace(go.Scatter(y=history.history['loss'], mode='lines', name='Train Loss'), row=1, col=1)
+    fig.add_trace(go.Scatter(y=history.history['val_loss'], mode='lines', name='Val Loss'), row=1, col=1)
+
+    fig.add_trace(go.Scatter(y=history.history['accuracy'], mode='lines', name='Train Accuracy'), row=1, col=2)
+    fig.add_trace(go.Scatter(y=history.history['val_accuracy'], mode='lines', name='Val Accuracy'), row=1, col=2)
+
+    fig.update_xaxes(title_text="Epochs", row=1, col=1)
+    fig.update_xaxes(title_text="Epochs", row=1, col=2)
+    st.plotly_chart(fig)
 
 def main():
     st.set_page_config(
@@ -139,4 +135,5 @@ def main():
                 _, train_acc = model.evaluate(X_train, y_train_ohe)
             st.success(f'Training time: {t}s. Train accuracy: {round(train_acc*100,2)}%. Test accuracy: {round(test_acc*100,2)}%')
             visualize_history(history)
+
 main()
