@@ -3,6 +3,7 @@ import time
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 from stqdm import stqdm
 from PIL import Image
@@ -98,7 +99,22 @@ def create_dataset():
         with cols[1]:
             uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
         X, y, labels = read_data(n)
+        fig = visualize_dataset(X, y, labels)
+        st.pyplot(fig)
+
     return X, y, labels
+
+@st.cache_data
+def visualize_dataset(X, y, labels):
+    fig, axs = plt.subplots(len(labels), 10)
+    fig.set_figheight(5)
+    fig.set_figwidth(2)
+    for i in range(len(labels)):
+        ids = np.random.choice(np.where(y == i)[0], 10, replace=False)
+        for j in range(10):
+            axs[i][j].axis('off')
+            axs[i][j].imshow(X[ids[j]], cmap='gray')
+    return fig
 
 def create_training_param():
     cols = st.columns(4)
