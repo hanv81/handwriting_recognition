@@ -73,7 +73,7 @@ def create_model(input_shape, cnn_blocks, mlp_layers, use_batchnorm, use_l2, dro
 
 def train(model, X_train, X_val, y_train_ohe, y_val_ohe, epochs):
     t = time.time()
-    history = model.fit(X_train, y_train_ohe, epochs = epochs, validation_data=(X_val, y_val_ohe), verbose=1)
+    history = model.fit(X_train, y_train_ohe, epochs = epochs, validation_data=(X_val, y_val_ohe), shuffle=True)
     t = int(time.time()-t)
     model.save('model.h5')
     return model, history, t
@@ -100,14 +100,7 @@ def create_dataset():
         X, y, labels = read_data(n)
     return X, y, labels
 
-def main():
-    st.set_page_config(
-        page_title="Training",
-        page_icon="💻",
-    )
-
-    X, y, labels = create_dataset()
-
+def create_training_param():
     cols = st.columns(4)
     with cols[0]:
         epochs = st.number_input('Epochs', min_value=5, max_value=100, value=10, step=5)
@@ -143,8 +136,19 @@ def main():
         with cols[1]:
             dropout = st.slider('Dropout', min_value=.0, max_value=.9, value=.4, step=.1)
 
+    return epochs, test_size, cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout
+
+def main():
+    st.set_page_config(
+        page_title="Training",
+        page_icon="💻",
+    )
+
+    X, y, labels = create_dataset()
+    epochs, test_size, cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout = create_training_param()
     model = create_model(X[..., None].shape[1:], cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout, y.max()+1)
     st.write('Total params:', model.count_params())
+
     if st.button('Train'):
         X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe = preprocess(X, y, test_size)
         with st.spinner('Training...'):
