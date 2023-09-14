@@ -37,22 +37,25 @@ def inference():
         if uploaded_file is not None:img = Image.open(uploaded_file)
 
     if st.button('Predict'):
-        model = load_model('model.h5')
-        img = img.resize(input_shape).convert('L')
-        img = np.array(img, dtype=float)/255
-        if uploaded_file is not None: 
-            col3, col4, col5 = st.columns(3)
-            with col3:
-                st.text('Original Image')
-                st.image(Image.open(uploaded_file))
-            with col4:
-                st.text('Grayscale Image')
-                inference_image(model, labels, img, input_shape)
-            with col5:
-                st.text('Invert Grayscale Image')
-                inference_image(model, labels, 1-img, input_shape)
-        else:
-            inference_image(model, labels, img, input_shape, False)
+        try:
+            model = load_model('model.h5')
+            img = img.resize(input_shape).convert('L')
+            img = np.array(img, dtype=float)/255
+            if uploaded_file is not None: 
+                col3, col4, col5 = st.columns(3)
+                with col3:
+                    st.text('Original Image')
+                    st.image(Image.open(uploaded_file))
+                with col4:
+                    st.text('Grayscale Image')
+                    inference_image(model, labels, img, input_shape)
+                with col5:
+                    st.text('Invert Grayscale Image')
+                    inference_image(model, labels, 1-img, input_shape)
+            else:
+                inference_image(model, labels, img, input_shape, False)
+        except OSError:
+            st.error('Model not found')
 
 def main():
     st.set_page_config(
