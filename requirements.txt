@@ -3,3 +3,5 @@ matplotlib
 tqdm
 scikit-learn
 tensorflow
+plotly
+stqdm
