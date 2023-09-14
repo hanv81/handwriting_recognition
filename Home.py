@@ -60,7 +60,7 @@ def inference():
 def main():
     st.set_page_config(
         page_title="Handwriting Recognition",
-        page_icon="✨",
+        page_icon="🏡",
     )
 
     inference()

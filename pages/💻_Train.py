@@ -119,6 +119,7 @@ def create_dataset():
         cols = st.columns(2)
         with cols[0]:
             n = st.number_input('Number of samples per class', value=500, min_value=100, max_value=20000, step=500)
+            view_dataset = st.toggle('View Dataset')
         with cols[1]:
             uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
 
@@ -126,8 +127,9 @@ def create_dataset():
         print(X.shape, y.shape)
         st.info(f'Dataset loaded. {X.shape[0]} samples. Input shape {X.shape[1:]}. {len(labels)} classes')
 
-        fig = visualize_dataset(X, y, labels)
-        st.pyplot(fig)
+        if view_dataset:
+            fig = visualize_dataset(X, y, labels)
+            st.pyplot(fig)
 
     return X, y
 
