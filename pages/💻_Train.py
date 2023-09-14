@@ -194,7 +194,7 @@ def main():
     model = create_model(X[..., None].shape[1:], cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout, y.max()+1)
     st.write('Total params:', model.count_params())
 
-    if st.button('Train'):
+    if st.button(label='Train', use_container_width=True):
         X_train, X_test, X_val, y_train_ohe, y_test_ohe, y_val_ohe = preprocess(X, y, test_size)
         with st.spinner('Training...'):
             model, history, t = train(model, X_train, X_val, y_train_ohe, y_val_ohe, epochs)
