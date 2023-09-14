@@ -4,6 +4,8 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+from zipfile import ZipFile
+from concurrent.futures import ThreadPoolExecutor
 from plotly.subplots import make_subplots
 from stqdm import stqdm
 from PIL import Image
@@ -32,8 +34,28 @@ def read_data(n = 1000):
         print(labels[i], imgs.shape)
     
     y = np.array(y)
-    print(X.shape, y.shape)
     return X,y,np.array(labels)
+
+def read_batch_data(zip, files, i, batch_size, data):
+    for j in range(i, min(i+batch_size,len(files))):
+        if files[j].endswith('png'):
+            with zip.open(files[j]) as f:
+                data[files[j]] = np.array(Image.open(f), dtype=float)
+
+def read_zip_file(uploaded_file, labels):
+    data = {}
+    batch_size = 32
+    with ZipFile(uploaded_file, 'r') as zip:
+        with ThreadPoolExecutor() as executor:
+            files = zip.namelist()
+            for i in range(0, len(files), batch_size):
+                executor.submit(read_batch_data, zip, files, i, batch_size, data)
+    
+    X = np.array(list(data.values()))
+    y = [k.split('/')[1] for k in data.keys()]
+    lb_list = labels.tolist()
+    y = np.array([lb_list.index(i) for i in y])
+    return X, y
 
 def preprocess(X, y, test_size):
     print(X.shape, y.shape, test_size)
@@ -99,6 +121,11 @@ def create_dataset():
         with cols[1]:
             uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
         X, y, labels = read_data(n)
+
+        if uploaded_file is not None:X, y = read_zip_file(uploaded_file, labels)
+        print(X.shape, y.shape)
+        st.info(f'Dataset loaded. {X.shape[0]} samples. Input shape {X.shape[1:]}. {len(labels)} classes')
+
         fig = visualize_dataset(X, y, labels)
         st.pyplot(fig)
 
