@@ -42,7 +42,8 @@ def read_batch_data(zip, files, i, batch_size, data):
             with zip.open(files[j]) as f:
                 data[files[j]] = np.array(Image.open(f), dtype=float)
 
-def read_zip_file(uploaded_file, labels):
+@st.cache_data
+def read_zip_file(uploaded_file):
     data = {}
     batch_size = 32
     with ZipFile(uploaded_file, 'r') as zip:
@@ -53,9 +54,9 @@ def read_zip_file(uploaded_file, labels):
     
     X = np.array(list(data.values()))
     y = [k.split('/')[1] for k in data.keys()]
-    lb_list = labels.tolist()
-    y = np.array([lb_list.index(i) for i in y])
-    return X, y
+    labels = sorted(list(set(y)))
+    y = np.array([labels.index(i) for i in y])
+    return X, y, np.array(labels)
 
 def preprocess(X, y, test_size):
     print(X.shape, y.shape, test_size)
@@ -120,16 +121,15 @@ def create_dataset():
             n = st.number_input('Number of samples per class', value=500, min_value=100, max_value=20000, step=500)
         with cols[1]:
             uploaded_file = st.file_uploader('Upload Dataset', type=['zip'])
-        X, y, labels = read_data(n)
 
-        if uploaded_file is not None:X, y = read_zip_file(uploaded_file, labels)
+        X, y, labels = read_zip_file(uploaded_file) if uploaded_file else read_data(n)
         print(X.shape, y.shape)
         st.info(f'Dataset loaded. {X.shape[0]} samples. Input shape {X.shape[1:]}. {len(labels)} classes')
 
         fig = visualize_dataset(X, y, labels)
         st.pyplot(fig)
 
-    return X, y, labels
+    return X, y
 
 @st.cache_data
 def visualize_dataset(X, y, labels):
@@ -187,7 +187,7 @@ def main():
         page_icon="💻",
     )
 
-    X, y, labels = create_dataset()
+    X, y = create_dataset()
     epochs, test_size, cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout = create_training_param()
     model = create_model(X[..., None].shape[1:], cnn_blocks, mlp_layers, use_batchnorm, use_l2, dropout, y.max()+1)
     st.write('Total params:', model.count_params())
