@@ -20,7 +20,7 @@ l2_reg = l2(0.0001)
 
 @st.cache_data
 def read_data(n = 1000):
-    labels = os.listdir(DS_PATH)
+    labels = sorted(os.listdir(DS_PATH))
     X = None
     y = None
     # for i in stqdm(range(len(labels))):
