@@ -17,6 +17,10 @@ def inference_image(model, labels, img, input_shape, draw_img=True):
     for i in ids[:5]:
         st.write(labels[i], ':', probs[i].round(decimals=2), '%')
 
+@st.cache_data
+def load_model_from_file():
+    return load_model('model.h5')
+
 def inference():
     labels, input_shape = read_labels_input_shape()
     st.subheader('Draw a letter (A-Z) or upload an image')
@@ -37,8 +41,11 @@ def inference():
         if uploaded_file is not None:img = Image.open(uploaded_file)
 
     if st.button('Predict'):
+        model = st.session_state.get('model')
         try:
-            model = load_model('model.h5')
+            if model is None:
+                print('Load model from file')
+                model = load_model('model.h5')
             img = img.resize(input_shape).convert('L')
             img = np.array(img, dtype=float)/255
             if uploaded_file is not None: 

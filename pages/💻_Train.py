@@ -100,6 +100,7 @@ def train(model, X_train, X_val, y_train_ohe, y_val_ohe, epochs):
     history = model.fit(X_train, y_train_ohe, epochs = epochs, validation_data=(X_val, y_val_ohe), shuffle=True)
     t = int(time.time()-t)
     model.save('model.h5')
+    st.session_state['model'] = model
     return model, history, t
 
 def visualize_history(history):
