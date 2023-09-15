@@ -139,6 +139,7 @@ def visualize_dataset(X, y, labels):
     fig, axs = plt.subplots(len(labels), 10)
     fig.set_figheight(5)
     fig.set_figwidth(2)
+    print(labels)
     for i in range(len(labels)):
         ids = np.random.choice(np.where(y == i)[0], 10, replace=False)
         for j in range(10):
